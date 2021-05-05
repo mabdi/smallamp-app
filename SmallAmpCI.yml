@@ -1,0 +1,32 @@
+name: SmallAmpCI
+
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  reponame: ${{github.event.repository.name}}
+
+on:
+  workflow_dispatch:
+
+jobs:
+  TestAmplification:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        portion: [1,2,3,4,5,6,7,8,9,10]
+    name: Job number ${{ strategy.job-index }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: hpi-swa/setup-smalltalkCI@v1
+        id: smalltalkci
+        with:
+          smalltalk-version: Pharo64-8.0
+      - run: smalltalkci -s ${{ steps.smalltalkci.outputs.smalltalk-version }}
+        shell: bash
+        timeout-minutes: 15
+      - uses: mabdi/smallamp-action@main
+      - run: smallAmpCI 
+        shell: bash
+        env:
+          SMALLAMP_PORTION: ${{ strategy.job-index }} 
+          SMALLAMP_ALLJOBS: ${{ strategy.job-total }}
