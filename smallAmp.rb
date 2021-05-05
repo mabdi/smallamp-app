@@ -13,7 +13,6 @@ set :bind, '0.0.0.0'
 set :show_exceptions, false
 
 
-
 class GHAapp < Sinatra::Application
 
   # Expects that the private key in PEM format. Converts the newlines
@@ -63,13 +62,7 @@ class GHAapp < Sinatra::Application
     200 # success status
   end
 
-#  error do
-#     'Error: - ' + env['sinatra.error'].message
-     #require 'pry' ; binding.pry
-#  end
-
   helpers do
-=begin
 
     def handle_action_completed(payload)
         logger.debug payload
@@ -84,41 +77,19 @@ class GHAapp < Sinatra::Application
        logger.debug rp
        r = @installation_client.repo(rp['full_name'])
        begin
-          @installation_client.contents( rp['full_name'], :path => '.github/workflows/SmallAmpCIX.yml')
+          @installation_client.contents( rp['full_name'], :path => '.github/workflows/SmallAmpCI.yml')
           logger.debug 'CI file exists, skip'
           return
        rescue Octokit::NotFound
           logger.debug 'not found, lets add it'
           my_content = File.read('SmallAmpCI.yml')
           @installation_client.create_contents(rp['full_name'],
-                 '.github/workflows/SmallAmpCIX.yml',
+                 '.github/workflows/SmallAmpCI.yml',
                  "[SmallAmpApp] push SmallAmpCI.yml",
                  my_content,
                  :branch => r.default_branch)
        end
-#       r = client.repo( repo )
- #      ref = 'heads/%s' % r.default_branch
-  #     sha_latest_commit = client.refs(repo, ref).object.sha
-   #    logger.debug 'sha_latest_commit '  + sha_latest_commit
-    #   sha_base_tree = github.commit(repo, sha_latest_commit).commit.tree.sha
-#       logger.debug 'sha_base_tree ' + sha_base_tree
- #      file_name = File.join(".github", "workflows", "SmallAmpCIX.yml")
-  #     logger.debug 'file_name '+ file_name
-   #    blob_sha = github.create_blob(repo, Base64.encode64(my_content), "base64")
-    #   sha_new_tree = github.create_tree(repo, 
-     #                              [ { :path => file_name, 
-      #                                 :mode => "100644", 
-       #                                :type => "blob", 
-        #                               :sha => blob_sha } ], 
-         #                          {:base_tree => sha_base_tree }).sha
- #      logger.debug 'tree created'
-  #     commit_message = "[SmallAmpApp] push SmallAmpCI.yml"
-   #    sha_new_commit = github.create_commit(repo, commit_message, sha_new_tree, sha_latest_commit).sha
-    #   logger.debug 'sha_new_commit '+ sha_new_commit
-     #  updated_ref = github.update_ref(repo, ref, sha_new_commit;)
-      # logger.debug 'updated_ref ' + updated_ref
     end
-=end
 
 
     # Saves the raw payload and converts the payload to JSON format
