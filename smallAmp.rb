@@ -25,6 +25,9 @@ class GHAapp < Sinatra::Application
   # The GitHub App's identifier (type integer) set when registering an app.
   APP_IDENTIFIER = ENV['GITHUB_APP_IDENTIFIER']
 
+  WORKFLOW_FILE = '.github/workflows/SmallAmpCI.yml'
+  SMALLAMP_REPOS = '~/smallampfiles/'
+
   # Turn on Sinatra's verbose logging during development
   configure :development do
     set :logging, Logger::DEBUG
@@ -65,7 +68,24 @@ class GHAapp < Sinatra::Application
   helpers do
 
     def handle_action_completed(payload)
-        logger.debug payload
+        if payload["workflow"]["path"] != WORKFLOW_FILE 
+            logger.debug 'another workflow has been finished, none of our business! ' + payload["workflow"]["path"]
+            return
+        end 
+        if payload["workflow_run"]["conclusion"] != "success"
+            logger.debug 'The job has failed. skip it ' + payload["workflow_run"]["conclusion"]
+            return
+        end
+        artifacts = @installation_client.get(payload["workflow_run"]["artifacts_url"])
+        folder = SMALLAMP_REPOS + payload["repository"]["full_name"] + "/workflows/" + payload["workflow_run"]["run_number"] 
+        FileUtils.mkdir_p folder
+        artifacts["artifacts"] do | art |
+            zip = @installation_client.get art["archive_download_url"]
+            File.open(folder + "/" + art["name"] + ".zip", "wb") do |f|
+               f.write(zip)
+            end
+            logger.debug "zip created: " + folder + "/" + art["name"] + ".zip"
+        end
     end
 
     def handle_repo_install(repo_list)
@@ -77,14 +97,14 @@ class GHAapp < Sinatra::Application
        logger.debug rp
        r = @installation_client.repo(rp['full_name'])
        begin
-          @installation_client.contents( rp['full_name'], :path => '.github/workflows/SmallAmpCI.yml')
+          @installation_client.contents( rp['full_name'], :path => WORKFLOW_FILE)
           logger.debug 'CI file exists, skip'
           return
        rescue Octokit::NotFound
           logger.debug 'not found, lets add it'
           my_content = File.read('SmallAmpCI.yml')
           @installation_client.create_contents(rp['full_name'],
-                 '.github/workflows/SmallAmpCI.yml',
+                 WORKFLOW_FILE,
                  "[SmallAmpApp] push SmallAmpCI.yml",
                  my_content,
                  :branch => r.default_branch)
